@@ -1,25 +1,23 @@
-import plotly.graph_objects as go
+from mpl_toolkits import mplot3d
+#%matplotlib inline
 import numpy as np
+import matplotlib.pyplot as plt
 
-fig = go.Figure(data=[
-    go.Mesh3d(
-        # 8 vertices of a cube
-        x=[0, 0, 1, 1, 0, 0, 1, 1],
-        y=[0, 1, 1, 0, 0, 1, 1, 0],
-        z=[0, 0, 0, 0, 1, 1, 1, 1],
-        colorbar_title='z',
-        colorscale=[[0, 'gold'],
-                    [0.5, 'mediumturquoise'],
-                    [1, 'magenta']],
-        # Intensity of each vertex, which will be interpolated and color-coded
-        intensity = np.linspace(0, 1, 8, endpoint=True),
-        # i, j and k give the vertices of triangles
-        i = [7, 0, 0, 0, 4, 4, 6, 6, 4, 0, 3, 2],
-        j = [3, 4, 1, 2, 5, 6, 5, 2, 0, 1, 6, 3],
-        k = [0, 7, 2, 3, 6, 7, 1, 1, 5, 5, 7, 6],
-        name='y',
-        showscale=True
-    )
-])
+fig = plt.figure()
+#ax = plt.axes(projection='3d')
 
-fig.write_image("model1.jpg")
+ax = plt.axes(projection='3d')
+
+# Data for a three-dimensional line
+zline = np.linspace(0, 15, 1000)
+xline = np.sin(zline)
+yline = np.cos(zline)
+ax.plot3D(xline, yline, zline, 'gray')
+
+# Data for three-dimensional scattered points
+zdata = 15 * np.random.random(100)
+xdata = np.sin(zdata) + 0.1 * np.random.randn(100)
+ydata = np.cos(zdata) + 0.1 * np.random.randn(100)
+ax.scatter3D(xdata, ydata, zdata, c=zdata, cmap='Greens');
+
+fig.savefig("model1.jpg")
