@@ -58,6 +58,15 @@ ax.scatter3D(boundary0[0], boundary0[1], boundary0[2], c=[0 if i==0 else 1 for i
 print("Finished establishing soap bounds")
 
 # Define initial soap bubble
-soap0 = 0
+soap0 = np.array([[0],[0],[0]])
+for i in range(1*n_side,4*n_side):
+  linB = np.concatenate([np.linspace(boundary0[r:r+1,i+1], boundary0[r:r+1,9*n_side - i], n_side) for r in range(3)],axis=1).T
+  
+  #print(linB,end = "\n\n")
+  
+  soap0 = np.concatenate((soap0, linB), axis = 1)
 
-fig.savefig("model0.jpg")
+ax.scatter3D(soap0[0], soap0[1], soap0[2], c=[0 if i==0 else 1 for i in range(len(soap0[0]))], cmap='Reds');
+print("Finished generating initial soap bubble")
+
+fig.savefig("model2.jpg")
