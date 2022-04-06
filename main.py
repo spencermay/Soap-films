@@ -2,6 +2,7 @@ from mpl_toolkits import mplot3d
 import numpy as np
 import matplotlib.pyplot as plt
 from math import sqrt
+import timeit
 
 # 3d plotting on pyplot: https://jakevdp.github.io/PythonDataScienceHandbook/04.12-three-dimensional-plotting.html
 
@@ -73,13 +74,15 @@ attentionN = 8
 # Minimum distance beyond which to stop paying attention to neighbors
 dMin = 0.05
 # Multiplier to bias towards points along wire
-mult = 40
+mult = 2
 # Step-length
-step = 0.0001
+step = 0.01
 # Number of iterations to perform
-REPS = 1
+REPS = 4
 # Display it as a surface or collection of points?
-surf = False#True
+surf = True
+# Number of points remains constant?
+constN = False
 
 def find_nearest(bubblepts0):
   dirs = []
@@ -88,7 +91,7 @@ def find_nearest(bubblepts0):
     # Find each point's closest neighbors:
     # For n smallest items in a numpy array: https://stackoverflow.com/questions/33623184/fastest-method-of-getting-k-smallest-numbers-in-unsorted-list-of-size-n-in-pytho
     #if pt in boundary0.tolist():
-    if any(np.equal(boundary0,pt).all(1)):
+    if any(np.equal(boundary0,pt).all(1)) and constN:
       dirs.append([0,0,0])
       continue
 
@@ -97,30 +100,35 @@ def find_nearest(bubblepts0):
     neighborhood = np.partition(dists, attentionN)[:attentionN]
     #print(neighborhood)
     vec_sum = [0,0,0]
-    neighbors = []
+    # neighbors = []
     for k in range(len(bubblepts0)):
       if dists[k] in neighborhood:
         neighbor = bubblepts0[k]
-        neighbors.append(neighbor)
-        mag = sqrt(sum([(neighbor[c]-pt[c])**2 for c in range(3)]))
-        #### sqrt dists[k] #####################
+        # neighbors.append(neighbor)
+        mag = sqrt(dists[k]) # sqrt(sum([(neighbor[c]-pt[c])**2 for c in range(3)]))
         
         for coord in range(3):
-          if neighbor in boundary0:
+          if any(np.equal(boundary0,neighbor).all(1)):
             vec_sum[coord] += mult * (neighbor[coord] - pt[coord]) / mag * step
           else:
             vec_sum[coord] += (neighbor[coord] - pt[coord]) / mag * step
     
     dirs.append(vec_sum)
-  return(dirs)
+  
+  return(dirs + len(boundary0)*[[0,0,0]])
+
+
+def find_nearest0():
+  return(find_nearest(soap0))
 
 def bubble_evolve(bubblepts0, reps):
   soap = bubblepts0
   for rep in range(reps):
-    soap = np.add(soap, find_nearest(soap0))
+    soap = np.add(np.concatenate([soap, boundary0], axis=0), find_nearest(soap))
     print(f"Iteration: {rep + 1}")
   return soap
 
+"""
 film = bubble_evolve(soap0, REPS)
 #print(find_nearest(soap0))
 
@@ -130,3 +138,35 @@ else:
   ax.scatter3D(film.T[0], film.T[1], film.T[2], c=[0 if i==0 else 1 for i in range(len(film))], cmap='Reds');
 # Save resulting figure as an image
 fig.savefig("model3_0.jpg")
+"""
+def find_nearest_time():
+  SETUP_CODE = '''
+from __main__ import find_nearest0
+import numpy as np'''
+
+  TEST_CODE = '''
+find_nearest0()'''
+
+  print (timeit.timeit(setup = SETUP_CODE,
+                     stmt = TEST_CODE,
+                     number = 4))
+#find_nearest_time()
+
+
+def bubble_evolve0():
+  return(bubble_evolve(soap0, REPS))
+  
+def bubble_evolve_time():
+  SETUP_CODE = '''
+from __main__ import bubble_evolve0
+import numpy as np'''
+
+  TEST_CODE = '''
+bubble_evolve0()'''
+
+  print (timeit.timeit(setup = SETUP_CODE,
+                     stmt = TEST_CODE,
+                     number = 1))
+bubble_evolve_time()
+
+# bubble_evolve takes 34.5 sec, find_nearest * 4 takes 20 sec 
