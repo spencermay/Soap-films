@@ -1,0 +1,8 @@
+#!/usr/bin/env -S ./python
+
+
+import sys
+import gmsh
+
+gmsh.initialize(sys.argv, run=True)
+gmsh.finalize()

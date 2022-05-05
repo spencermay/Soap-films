@@ -3,9 +3,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from math import sqrt
 import timeit
-from scipy.spatial import Delaunay, ConvexHull
+#from scipy.spatial import Delaunay, ConvexHull
 #Delaunay no longer needed?
-import matplotlib.tri as mtri
+#import matplotlib.tri as mtri
+#import open3d as o3d
+#import pygalmesh
+#import pygmsh
+
 
 # 3d plotting on pyplot: https://jakevdp.github.io/PythonDataScienceHandbook/04.12-three-dimensional-plotting.html
 
@@ -126,19 +130,38 @@ def find_nearest(bubblepts0):
 def area(tri):
   return(0.5 * np.linalg.norm(np.cross(tri[0]-tri[1],tri[2]-tri[1])))
 
-def refine(bubblepts):
+def refine(bubblepts, tris): 
   # Find the triangulation of the surface
+
+  
+  """
+  # Article on surface reconstruction with python: https://towardsdatascience.com/5-step-guide-to-generate-3d-meshes-from-point-clouds-with-python-36bad397d8ba
+  print("Beginning")
+  pcd = o3d.geometry.PointCloud()
+  pcd.points = o3d.utility.Vector3dVector(bubblepts)
+  pcd.normals = o3d.geometry.estimate_normals(pcd,search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
+
+  # Calculate mesh
+  poisson_mesh = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=8, width=0, scale=1.1, linear_fit=False)[0]
+
+  # Crop mesh to size of original point cloud
+  bbox = pcd.get_axis_aligned_bounding_box()
+  p_mesh_crop = poisson_mesh.crop(bbox)
+  print("p_mesh:", p_mesh_crop)
+  """
   #tris = Delaunay(bubblepts)
-  tris = ConvexHull(bubblepts)
+  ##### tris = ConvexHull(bubblepts)
   #tris = mtri.Triangulation(bubblepts)
   # Create an empty list in which to store the adjustments that need to be made to the mesh points
   adjustments = [[] for j in range(len(bubblepts))]
   # For each triangle, calculate the adjustments to its vertices based solely on that triangle
   
+  """
   ax.plot_trisurf(bubblepts[:,0], bubblepts[:,1], bubblepts[:,2])#, tris.simplices)
   fig.savefig("model3_2.jpg")
-  
-  for tri in tris.simplices:
+
+  """
+  for tri in tris:
     #tris.triangles:#tris.simplices[:10]:
     # Convert the indices stored in tris.simplices to actual points
     triangle = [bubblepts[x] for x in tri]
@@ -162,13 +185,13 @@ def refine(bubblepts):
       # Add to the list of adjustments
       adjustments[p].append(np.array(triArea * sum( \
         [triangle[(g + i + 1) % 3] for g in range(2)]), ndmin=1))
-  #"""
+  #"#""
   print(adjustments[0:11])
   #for k in adjustments:
   #  print(k)
   #print(np.array([len(k) for k in adjustments]))
   #print([np.ndarray.size(n) for n in adjustments])
-  #"""
+  #"#""
   
   #print([np.ndarray.size(n) for n in adjustments])
   #print(len([np.sum(n) for n in adjustments]))
@@ -178,16 +201,26 @@ def refine(bubblepts):
   #print(np.array([(step * (np.sum(n)) / len(n)) for n in adjustments]))
   print(np.array([len(n) for n in adjustments]))
   return(np.array([(step * (np.sum(n)) / len(n)) for n in adjustments]))
+  """"""
   #return([step * (np.sum(n)) / np.ndarray.size(n) for n in adjustments])
   #plt.triplot(bubblepts[:,0], bubblepts[:,1], bubblepts[:,2], tri.simplices)
 
 def bubble_evolve(bubblepts0, reps):
   soap = bubblepts0
+  
+  if sRefined == True:
+    tris = [[n,n+1,n+10] for n in range(len(bubblepts0))]
+    plt.triplot(bubblepts[:,0], bubblepts[:,1], bubblepts[:,2], tris)
+
+  
   for rep in range(reps):
     #print(np.array(refine(soap))[:40])
 
     
     if sRefined == True:
+      
+
+      
       if constN:
         soap = np.add(soap, refine(soap))
       else:
@@ -204,17 +237,18 @@ def bubble_evolve(bubblepts0, reps):
 
 
 #"""
-film = bubble_evolve(soap0, REPS)
+############### film = bubble_evolve(soap0, REPS)
 #print(find_nearest(soap0))
 
+"""
 if surf:
   ax.plot_trisurf(film.T[0], film.T[1], film.T[2], cmap='viridis', edgecolor='none');
 else:
   ax.scatter3D(film.T[0], film.T[1], film.T[2], c=[0 if i==0 else 1 for i in range(len(film))], cmap='Reds');
 # Save resulting figure as an image
 fig.savefig("model3_1.jpg")
-#"""
-
+#"#""
+"""
 
 
 
@@ -254,3 +288,10 @@ bubble_evolve0()'''
 # bubble_evolve_time()
 
 # bubble_evolve with 4 iterations takes 34.5 sec, find_nearest * 4 takes 20 sec
+
+bubblepts=soap0
+
+tris = np.array([[n,n+1,n+10] for n in range(len(bubblepts)-10)][:10])
+print(tris)
+plt.triplot(bubblepts[:,0], bubblepts[:,1], bubblepts[:,2], tris)
+fig.savefig("begin0.jpg")
