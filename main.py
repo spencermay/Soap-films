@@ -13,6 +13,10 @@ import timeit
 
 # 3d plotting on pyplot: https://jakevdp.github.io/PythonDataScienceHandbook/04.12-three-dimensional-plotting.html
 
+#Deprecated version:
+#fig = plt.figure()
+#ax = fig.gca(projection='3d')
+
 fig = plt.figure()
 ax = plt.axes(projection='3d')
 
@@ -57,7 +61,11 @@ for i in range(1*n_side,4*n_side):
   linB = np.concatenate([np.linspace(boundary0[i+1,r:r+1], boundary0[9*n_side - i, r:r+1], n_side) for r in range(3)], axis=1)
   soap0 = np.append(soap0, linB, axis=0) #, axis=1)
 
-soap0 = np.unique(soap0, axis=0)
+
+#_, soap_idx = np.unique(soap0, return_index=True)
+#soap0 = soap0[np.sort(soap_idx)]
+
+#soap0 = np.unique(soap0, axis=0)
 
 
 
@@ -124,6 +132,8 @@ def find_nearest(bubblepts0):
     return(dirs + len(boundary0)*[[0,0,0]])
 
 
+def find_tris(bubblepts):
+  return np.array([[[n,n+1,n+11], [n,n+10,n+11]] for n in range(len(bubblepts)-11) if n%10 != 0]).reshape(-1,3)
 
 
 
@@ -131,7 +141,7 @@ def area(tri):
   return(0.5 * np.linalg.norm(np.cross(tri[0]-tri[1],tri[2]-tri[1])))
 
 def refine(bubblepts, tris): 
-  # Find the triangulation of the surface
+  # Find the triangulation of the surface -- use find_tris()
 
   
   """
@@ -289,9 +299,14 @@ bubble_evolve0()'''
 
 # bubble_evolve with 4 iterations takes 34.5 sec, find_nearest * 4 takes 20 sec
 
+from mpl_toolkits.mplot3d import Axes3D
+
 bubblepts=soap0
 
-tris = np.array([[n,n+1,n+10] for n in range(len(bubblepts)-10)][:10])
-print(tris)
-plt.triplot(bubblepts[:,0], bubblepts[:,1], bubblepts[:,2], tris)
+#tris = np.array([[[n,n+1,n+10], [n,n+9,n+10]] for n in range(len(bubblepts)-10) if n%10 == 9][:40]).reshape(-1,3)
+
+#print(tris)
+ax.plot_trisurf(bubblepts[:,0], bubblepts[:,1], bubblepts[:,2], triangles = tris)
 fig.savefig("begin0.jpg")
+
+#Commented out np.unique line
