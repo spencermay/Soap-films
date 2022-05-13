@@ -142,7 +142,6 @@ def area(tri):
 
 def refine(bubblepts, tris): 
   # Find the triangulation of the surface -- use find_tris()
-
   
   """
   # Article on surface reconstruction with python: https://towardsdatascience.com/5-step-guide-to-generate-3d-meshes-from-point-clouds-with-python-36bad397d8ba
@@ -184,7 +183,7 @@ def refine(bubblepts, tris):
     # For each of the indices stored in tri (for each vertex)
     for i,p in enumerate(tri):
       # If the point is on the boundary and it's set to not increase the number of points:
-      print(triangle[i])
+      #print(triangle[i])
       if any(np.equal(boundary0,triangle[i]).all(1)) and constN:
         adjustments[p] = np.array([0], ndmin=1)
         #print(p)
@@ -217,48 +216,50 @@ def refine(bubblepts, tris):
 
 def bubble_evolve(bubblepts0, reps):
   soap = bubblepts0
-  
+
+  # Triangulate the surface if using the mesh strategy:
   if sRefined == True:
-    tris = [[n,n+1,n+10] for n in range(len(bubblepts0))]
-    plt.triplot(bubblepts[:,0], bubblepts[:,1], bubblepts[:,2], tris)
+    tris = find_tris(bubblepts0)
 
-  
+  # Repeat the specified number of times:
   for rep in range(reps):
-    #print(np.array(refine(soap))[:40])
 
-    
+    # If using meshing strategy
     if sRefined == True:
-      
+      # Add the adjustments to the soap point cloud
+      soap = np.add(soap, refine(soap))
 
-      
-      if constN:
-        soap = np.add(soap, refine(soap))
-      else:
-        soap = np.add(np.concatenate([soap, boundary0], axis=0), refine(soap))
-
+    # If using the boring strategy
     else:
+      # If the number of points remains constant
       if constN:
+        # Add the adjustments to the soap point cloud
         soap = np.add(soap, find_nearest(soap))
+      # If more points are added each time
       else:
+        # Add the adjustments to the soap point cloud, and append the boundary points once more
         soap = np.add(np.concatenate([soap, boundary0], axis=0), find_nearest(soap))
+    # Print number of iterations completed to keep track of progress
     print(f"Iteration: {rep + 1}")
+
+  # Return the final result
   return soap
 
 
-
+find_tris(soap0)
 #"""
-############### film = bubble_evolve(soap0, REPS)
+film = bubble_evolve(soap0, REPS)
 #print(find_nearest(soap0))
 
-"""
+
 if surf:
-  ax.plot_trisurf(film.T[0], film.T[1], film.T[2], cmap='viridis', edgecolor='none');
+  ax.plot_trisurf(film.T[0], film.T[1], film.T[2], triangles=find_tris(soap0), cmap='viridis', edgecolor='none');
 else:
   ax.scatter3D(film.T[0], film.T[1], film.T[2], c=[0 if i==0 else 1 for i in range(len(film))], cmap='Reds');
 # Save resulting figure as an image
-fig.savefig("model3_1.jpg")
+fig.savefig("model3_2.jpg")
 #"#""
-"""
+
 
 
 
@@ -299,14 +300,15 @@ bubble_evolve0()'''
 
 # bubble_evolve with 4 iterations takes 34.5 sec, find_nearest * 4 takes 20 sec
 
-from mpl_toolkits.mplot3d import Axes3D
+#from mpl_toolkits.mplot3d import Axes3D
 
 bubblepts=soap0
 
 #tris = np.array([[[n,n+1,n+10], [n,n+9,n+10]] for n in range(len(bubblepts)-10) if n%10 == 9][:40]).reshape(-1,3)
 
+
 #print(tris)
-ax.plot_trisurf(bubblepts[:,0], bubblepts[:,1], bubblepts[:,2], triangles = tris)
+ax.plot_trisurf(bubblepts[:,0], bubblepts[:,1], bubblepts[:,2], triangles = find_tris)
 fig.savefig("begin0.jpg")
 
 #Commented out np.unique line
