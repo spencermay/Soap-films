@@ -93,7 +93,7 @@ surf = True
 # Number of points remains constant?
 constN = True#False
 # Used refining technique?
-sRefined = False#True
+sRefined = True
 
 def find_nearest(bubblepts0):
   dirs = []
@@ -182,18 +182,24 @@ def refine(bubblepts, tris):
     
     # For each of the indices stored in tri (for each vertex)
     for i,p in enumerate(tri):
-      # If the point is on the boundary and it's set to not increase the number of points:
+      # If the point is on the boundary:
+      #no longer needed for refine() --> "and it's set to not increase the number of points"
       #print(triangle[i])
-      if any(np.equal(boundary0,triangle[i]).all(1)) and constN:
-        adjustments[p] = np.array([0], ndmin=1)
+      if any(np.equal(boundary0,triangle[i]).all(1)):
+        #adjustments[p] = np.array([0], ndmin=1)
+        adjustments[p] = [[0,0,0]]
         #print(p)
         continue
 
       #print("T", np.array(triArea * sum( \
       #  [triangle[(g + i + 1) % 3] for g in range(2)]), ndmin=1))
       # Add to the list of adjustments
-      adjustments[p].append(np.array(triArea * sum( \
-        [triangle[(g + i + 1) % 3] for g in range(2)]), ndmin=1))
+      #adjustments[p].append(np.array(triArea * sum( \
+      #  [triangle[(g + i + 1) % 3] for g in range(2)]), ndmin=1))
+      
+      adjustments[p].append(list(triArea * sum( \
+        [triangle[(g + i + 1) % 3] for g in range(2)])))
+      #print(adjustments[p])
   #"#""
   print(adjustments[0:11])
   #for k in adjustments:
@@ -209,6 +215,9 @@ def refine(bubblepts, tris):
 
   #print(np.array([(step * (np.sum(n)) / len(n)) for n in adjustments]))
   print(np.array([len(n) for n in adjustments]))
+  #print([(step * (np.sum(n)) / len(n)) for n in adjustments])
+  print([[n[:,k] for k in range(3)] for n in adjustments])
+  #print([step * ([sum(n[:,k]) for k in range(3)]) / len(n) for n in adjustments])
   return(np.array([(step * (np.sum(n)) / len(n)) for n in adjustments]))
   """"""
   #return([step * (np.sum(n)) / np.ndarray.size(n) for n in adjustments])
@@ -227,7 +236,7 @@ def bubble_evolve(bubblepts0, reps):
     # If using meshing strategy
     if sRefined == True:
       # Add the adjustments to the soap point cloud
-      soap = np.add(soap, refine(soap))
+      soap = np.add(soap, refine(soap, tris))
 
     # If using the boring strategy
     else:
@@ -257,7 +266,7 @@ if surf:
 else:
   ax.scatter3D(film.T[0], film.T[1], film.T[2], c=[0 if i==0 else 1 for i in range(len(film))], cmap='Reds');
 # Save resulting figure as an image
-fig.savefig("model3_2.jpg")
+fig.savefig("model3_3.jpg")
 #"#""
 
 
