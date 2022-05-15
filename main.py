@@ -84,16 +84,18 @@ attentionN = 8
 dMin = 0.05
 # Multiplier to bias towards points along wire
 mult = 2
-# Step-length
-step = 0.01
-# Number of iterations to perform
-REPS = 4
+# Step-length. # 0.01
+step = 5
+# Number of iterations to perform # 4
+REPS = 15
 # Display it as a surface or collection of points?
 surf = True
 # Number of points remains constant?
 constN = True#False
 # Used refining technique?
 sRefined = True
+# Border precision -- number of decimal places to check to figure out if a point is on the border:
+bPrecision = 10
 
 def find_nearest(bubblepts0):
   dirs = []
@@ -170,13 +172,16 @@ def refine(bubblepts, tris):
   fig.savefig("model3_2.jpg")
 
   """
-  for tri in tris:
+  for tri in tris: #[0:1]
     #tris.triangles:#tris.simplices[:10]:
     # Convert the indices stored in tris.simplices to actual points
     triangle = [bubblepts[x] for x in tri]
+    ###print("tri",tri)
+    ###print("triangle",triangle)
     # Calculate areas using cross product
     # Triangle needs to be a list of numpy arrays
     triArea = area(triangle)
+    ###print("triArea", triArea)
     
     # Adjust in direction of that area for each vertex (sum two vectors and multiply by area swept out between them)
     
@@ -185,10 +190,11 @@ def refine(bubblepts, tris):
       # If the point is on the boundary:
       #no longer needed for refine() --> "and it's set to not increase the number of points"
       #print(triangle[i])
-      if any(np.equal(boundary0,triangle[i]).all(1)):
+      #if any(np.equal(boundary0,triangle[i]).all(1)):
+      if any(np.equal(np.around(boundary0,bPrecision),                np.around(triangle[i],bPrecision)).all(1)):
         #adjustments[p] = np.array([0], ndmin=1)
         adjustments[p] = [[0,0,0]]
-        #print(p)
+        ###print("p",p)
         continue
 
       #print("T", np.array(triArea * sum( \
@@ -196,12 +202,24 @@ def refine(bubblepts, tris):
       # Add to the list of adjustments
       #adjustments[p].append(np.array(triArea * sum( \
       #  [triangle[(g + i + 1) % 3] for g in range(2)]), ndmin=1))
+      #print(triArea * sum( \
+      #  [triangle[(g + i + 1) % 3] for g in range(2)]))
+
+      # Calculate vector sum for adjustment:
       
-      adjustments[p].append(list(triArea * sum( \
-        [triangle[(g + i + 1) % 3] for g in range(2)])))
-      #print(adjustments[p])
+      #adjustments[p].append(list(triArea * (sum( \
+      #  [triangle[(i + g + 1) % 3] for g in range(2)]) - triangle[i])))
+      adjustments[p].append(list(triArea * (triangle[(i+1)%3] + triangle[(i+2)%3] - 2*triangle[i])))
+      ###print(adjustments[p])
+
+  ###print("adjustments", adjustments[0:15])
+  #if not adjustments[0]:
+  #  adjustments[0]=[[0,0,0]]
+  
+  # If for some reason one of the points doesn't appear in the mesh, don't adjust it
+  adjustments = [[[0,0,0]] if y==[] else y for y in adjustments]
   #"#""
-  print(adjustments[0:11])
+  
   #for k in adjustments:
   #  print(k)
   #print(np.array([len(k) for k in adjustments]))
@@ -214,12 +232,21 @@ def refine(bubblepts, tris):
   #print(len([(step * (np.sum(n)) / len(n)) for n in adjustments]))
 
   #print(np.array([(step * (np.sum(n)) / len(n)) for n in adjustments]))
-  print(np.array([len(n) for n in adjustments]))
+  #print(np.array([len(n) for n in adjustments]))
   #print([(step * (np.sum(n)) / len(n)) for n in adjustments])
-  print([[n[:,k] for k in range(3)] for n in adjustments])
+  #print("adj2", [[j[k] for k in range(3)] for n in adjustments for j in n][:10])
+  #print("adj3", [[sum([j[k] for j in n]) for k in range(3)] for n in adjustments][:10])
   #print([step * ([sum(n[:,k]) for k in range(3)]) / len(n) for n in adjustments])
-  return(np.array([(step * (np.sum(n)) / len(n)) for n in adjustments]))
+  adj = [[sum([j[k] for j in n]) for k in range(3)] for n in adjustments]
+  norms = [np.linalg.norm(u) for u in adj]
+  ###print(min(norms))
+  ###print("adj final", np.array([[1 * step * sum([j[k] for j in n]) / len(n) for k in range(3)] for n in [[[0,0,0]] if y==[] else y for y in adjustments]][:15]))
+  
+  return(np.array([[1 * step * sum([j[k] for j in n]) / len(n) / max(norms) for k in range(3)] for n in adjustments]))
+  
+  #return(np.array([(step * (np.sum(n)) / len(n)) for n in adjustments]))
   """"""
+  
   #return([step * (np.sum(n)) / np.ndarray.size(n) for n in adjustments])
   #plt.triplot(bubblepts[:,0], bubblepts[:,1], bubblepts[:,2], tri.simplices)
 
@@ -255,12 +282,13 @@ def bubble_evolve(bubblepts0, reps):
   return soap
 
 
-find_tris(soap0)
+
 #"""
 film = bubble_evolve(soap0, REPS)
 #print(find_nearest(soap0))
 
-
+#print("triArea", area([np.array([0,0,0]), np.array([1,0,0]), np.array([1,1,1])]), 1/sqrt(2))
+#"#""
 if surf:
   ax.plot_trisurf(film.T[0], film.T[1], film.T[2], triangles=find_tris(soap0), cmap='viridis', edgecolor='none');
 else:
@@ -268,7 +296,8 @@ else:
 # Save resulting figure as an image
 fig.savefig("model3_3.jpg")
 #"#""
-
+#"#""
+print(refine([np.array([0.5,0.5,0.5]),np.array([1.5,0.5,0.5]),np.array([1.5,1.5,1.5])],[[0,1,2]]))
 
 
 
@@ -317,7 +346,9 @@ bubblepts=soap0
 
 
 #print(tris)
-ax.plot_trisurf(bubblepts[:,0], bubblepts[:,1], bubblepts[:,2], triangles = find_tris)
+ax.plot_trisurf(bubblepts[:,0], bubblepts[:,1], bubblepts[:,2], triangles = find_tris(bubblepts))
 fig.savefig("begin0.jpg")
+
+
 
 #Commented out np.unique line
